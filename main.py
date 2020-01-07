@@ -44,11 +44,11 @@ def deleteFile(service, file):
 
 
 # upload file to drive
-def uploadFile(tokenfilename, credentailsfilename, directorypath):
+def uploadFile(tokenfilename, credentailsfilename, directorypath, parentID=None):
     service = getToken(tokenfilename, credentailsfilename)
     start_time = time.time()
     for file in getFiles(directorypath):
-        metadata = {'name': file, 'mimeType': file.split('.')[1]}
+        metadata = {'name': file, 'mimeType': file.split('.')[1], 'parents': [parentID]}
         if deleteFile(service, file):
             uploadNewFileVersion(service, metadata, file)
             print(f'Process completed in {time.time() - start_time} seconds...')
@@ -58,8 +58,12 @@ def uploadFile(tokenfilename, credentailsfilename, directorypath):
 
 
 if __name__ == '__main__':
-    # calling the google api's
-    from googleapiclient import discovery
-    # for setting up Http connection
-    from httplib2 import Http
-    uploadFile('storage.json', 'credentials.json', os.getcwd())
+    # For command line arguments
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--parent', help='Enter the drive folder ID')
+    args = parser.parse_args()
+    if args.parent:
+        uploadFile('storage.json', 'credentials.json', os.getcwd(), args.parent)
+    else:
+        uploadFile('storage.json', 'credentials.json', os.getcwd())
