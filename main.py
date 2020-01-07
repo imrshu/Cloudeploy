@@ -50,10 +50,10 @@ def uploadFile(tokenfilename, credentailsfilename, directorypath, parentID=None)
     for file in getFiles(directorypath):
         metadata = {'name': file, 'mimeType': file.split('.')[1], 'parents': [parentID]}
         if deleteFile(service, file):
-            uploadNewFileVersion(service, metadata, file)
+            uploadNewFileVersion(service, metadata, directorypath+file)
             print(f'Process completed in {time.time() - start_time} seconds...')
         else:
-            uploadNewFileVersion(service, metadata, file)
+            uploadNewFileVersion(service, metadata, directorypath+file)
             print(f'File uploaded in {time.time() - start_time} seconds...')
 
 
@@ -62,8 +62,10 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--parent', help='Enter the drive folder ID')
+    parser.add_argument('-c', '--credentials', help='Give path to credentials.json file')
+    parser.add_argument('-f', '--file', help='Give path to files directory')
     args = parser.parse_args()
-    if args.parent:
-        uploadFile('storage.json', 'credentials.json', os.getcwd(), args.parent)
+    if args.parent and (args.credentials and args.file):
+        uploadFile('storage.json', args.credentials, args.file, args.parent)
     else:
-        uploadFile('storage.json', 'credentials.json', os.getcwd())
+        print('Values were not given Try again....')

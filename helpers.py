@@ -23,7 +23,7 @@ def requestTokenFromGoogle(tokenfilename, credentailsfilename, SCOPES):
 
 # get the files from files directory
 def getFiles(directorypath):
-    return os.listdir(directorypath+'/files/')
+    return os.listdir(directorypath)
 
 
 # check the drive
@@ -38,7 +38,7 @@ def checkDrive(service, file):
 
 # upload new version of files
 def uploadNewFileVersion(service, metadata, file):
-    resp = service.files().create(body=metadata, media_body='./files/'+file).execute()
+    resp = service.files().create(body=metadata, media_body=file).execute()
     if resp:
         print(f'Uploaded {resp["name"]} successfully')
     else:
