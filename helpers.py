@@ -40,6 +40,32 @@ def checkDrive(service, file):
 def uploadNewFileVersion(service, metadata, file):
     resp = service.files().create(body=metadata, media_body=file).execute()
     if resp:
-        print(f'Uploaded {resp["name"]} successfully')
+        print(f'New {resp["name"]} Uploaded successfully...')
     else:
-        print(f'Error in uploading {resp["name"]}')
+        print(f'Error in uploading {resp["name"]}...')
+
+
+# Check for the folder in drive
+def checkFolder(service, foldername):
+    resp = service.files().list(q=f"name='{foldername}'").execute()
+    if len(resp['files']) > 0:
+        for file in resp['files']:
+            return file['id']
+    else:
+        return 0
+
+
+# Create a folder on drive
+def createFolder(service, metadata):
+    return service.files().create(body=metadata).execute()['id']
+
+
+# upload files to a specific folder at drive
+def uploadFilesToDir(service, subdirectory_path, parentFolderId):
+    for file in os.listdir(subdirectory_path):
+        metadata = {'name': file, 'mimeType': file.split('.')[1], 'parents': [parentFolderId]}
+        resp = service.files().create(body=metadata, media_body=os.path.join(subdirectory_path, file)).execute()
+        if resp:
+            print(f'{resp["name"]} Uploaded successfully...')
+        else:
+            print(f'Error in uploading {resp["name"]}...')

@@ -6,7 +6,10 @@ from httplib2 import Http
 from helpers import (get_or_write_tokenfile,
                     requestTokenFromGoogle,
                     getFiles, checkDrive,
-                    uploadNewFileVersion)
+                    uploadNewFileVersion,
+                    checkFolder,
+                    createFolder,
+                    uploadFilesToDir)
 # os module to work with directories & files
 import os
 # time library for measuring time
@@ -37,35 +40,50 @@ def deleteFile(service, file):
     id = checkDrive(service, file)
     if id:
         service.files().delete(fileId=id).execute()
-        print(f'Older version of {file} deleted successfully')
+        print(f'Older {file} deleted successfully')
         return True
     else:
         return False
 
 
+# Delete the folder from drive
+def deleteFolder(service, folderId):
+    service.files().delete(fileId=folderId).execute()
+
+
 # upload file to drive
 def uploadFile(tokenfilename, credentailsfilename, directorypath, parentID=None):
-    service = getToken(tokenfilename, credentailsfilename)
     start_time = time.time()
+    service = getToken(tokenfilename, credentailsfilename)
     for file in getFiles(directorypath):
-        metadata = {'name': file, 'mimeType': file.split('.')[1], 'parents': [parentID]}
-        if deleteFile(service, file):
-            uploadNewFileVersion(service, metadata, directorypath+file)
+        # Get the sub directory absolute path
+        subdir_filepath = os.path.join(directorypath, file)
+        if os.path.isdir(subdir_filepath):
+            # Create metadata for folder
+            dir_metadata = {'name': file, 'mimeType': 'application/vnd.google-apps.folder', 'parents': ['1pmFLZ-sNeLscJ9pmqA2CPmcYv8FyF2iv']}
+            # Check if folder exists
+            oldFolderId = checkFolder(service, file)
+            if oldFolderId != 0:
+                # Delete the old folder of files
+                deleteFolder(service, oldFolderId)
+            # Create the new folder
+            newFolderId = createFolder(service, dir_metadata)
+            # Upload files to folder
+            uploadFilesToDir(service, subdir_filepath, newFolderId)
             print(f'Process completed in {time.time() - start_time} seconds...')
         else:
-            uploadNewFileVersion(service, metadata, directorypath+file)
-            print(f'File uploaded in {time.time() - start_time} seconds...')
+            # Create file metadata
+            file_metadata = {'name': file, 'mimeType': file.split('.')[1], 'parents': ['1pmFLZ-sNeLscJ9pmqA2CPmcYv8FyF2iv']}
+            # If file exists delete the file
+            if deleteFile(service, file):
+                # Upload new version of file
+                uploadNewFileVersion(service, file_metadata, os.path.join(directorypath, file))
+            else:
+                # Upload new version of file
+                uploadNewFileVersion(service, file_metadata, os.path.join(directorypath, file))
+            print(f'Process completed in {time.time() - start_time} seconds...')
 
 
 if __name__ == '__main__':
     # For command line arguments
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--parent', help='Enter the drive folder ID')
-    parser.add_argument('-c', '--credentials', help='Give path to credentials.json file')
-    parser.add_argument('-f', '--file', help='Give path to files directory')
-    args = parser.parse_args()
-    if args.parent and (args.credentials and args.file):
-        uploadFile('storage.json', args.credentials, args.file, args.parent)
-    else:
-        print('Values were not given Try again....')
+    uploadFile('storage.json', 'credentials.json', './files')
